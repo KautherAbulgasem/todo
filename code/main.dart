@@ -1,54 +1,116 @@
 import 'package:flutter/material.dart';
+import 'task_page.dart';
 
-class TaskPage extends StatefulWidget {
-  final Map<String, dynamic>? task;
+void main() => runApp(TodoApp());
 
-  TaskPage({this.task});
-
+class TodoApp extends StatelessWidget {
   @override
-  _TaskPageState createState() => _TaskPageState();
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Todo App',
+      home: HomePage(),
+    );
+  }
 }
 
-class _TaskPageState extends State<TaskPage> {
-  final TextEditingController _controller = TextEditingController();
-
+class HomePage extends StatefulWidget {
   @override
-  void initState() {
-    super.initState();
-    if (widget.task != null) {
-      _controller.text = widget.task!['title'];
-    }
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<Map<String, dynamic>> todos = [];
+
+  void _addOrUpdateTodo({
+    required Map<String, dynamic> todo,
+    int? index,
+  }) {
+    setState(() {
+      if (index == null) {
+        todos.add(todo);
+      } else {
+        todos[index] = todo;
+      }
+    });
   }
 
-  void _submitTask() {
-    final task = {
-      'title': _controller.text,
-      'completed': widget.task?['completed'] ?? false,
-    };
-    Navigator.pop(context, task);
+  void _toggleTodoStatus(int index) {
+    setState(() {
+      todos[index]['completed'] = !todos[index]['completed'];
+    });
+  }
+
+  void _deleteTodo(int index) {
+    setState(() {
+      todos.removeAt(index);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.task == null ? 'Create Task' : 'Update Task'),
+        title: Text('Todo App'),
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          children: <Widget>[
-            TextField(
-              controller: _controller,
-              decoration: InputDecoration(labelText: 'Task'),
+      body: ListView.builder(
+        itemCount: todos.length,
+        itemBuilder: (context, index) {
+          return ListTile(
+            leading: Checkbox(
+              value: todos[index]['completed'],
+              onChanged: (value) {
+                _toggleTodoStatus(index);
+              },
             ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _submitTask,
-              child: Text('Submit'),
+            title: Text(todos[index]['title']),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.edit),
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TaskPage(
+                          task: todos[index],
+                        ),
+                      ),
+                    );
+                    if (result != null) {
+                      _addOrUpdateTodo(
+                        todo: result,
+                        index: index,
+                      );
+                    }
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () {
+                    _deleteTodo(index);
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TaskPage(),
+            ),
+          );
+          if (result != null) {
+            _addOrUpdateTodo(
+              todo: result,
+            );
+          }
+        },
       ),
     );
   }
